@@ -1,11 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { WebhookClient } from 'discord.js';
+import { WebhookClient, EmbedBuilder } from 'discord.js';
 
 @Injectable()
 export class DiscordService {
   private logger = new Logger(DiscordService.name);
   private readonly webhookClient: WebhookClient;
+  private readonly embedBuilder: EmbedBuilder;
 
   constructor(private readonly configService: ConfigService) {
     const url = this.configService.get<string>('DISCORD_WEBHOOK_URL');
@@ -16,12 +17,18 @@ export class DiscordService {
     this.webhookClient = new WebhookClient({
       url,
     });
+
+    this.embedBuilder = new EmbedBuilder();
   }
 
   async sendCodeRedeemed(code: string, platform: string) {
     try {
       await this.webhookClient.send({
-        content: `Code redeemed: ${code} on platform: ${platform}`,
+        embeds: [
+          this.embedBuilder
+            .setColor('Green')
+            .setDescription(`Code redeemed: ${code} on platform: ${platform}`),
+        ],
       });
     } catch (error) {
       this.logger.error('Error sending code redeemed:', error);
@@ -31,7 +38,13 @@ export class DiscordService {
   async sendCodeNotRedeemed(code: string, platform: string) {
     try {
       await this.webhookClient.send({
-        content: `Code not redeemed: ${code} on platform: ${platform}`,
+        embeds: [
+          this.embedBuilder
+            .setColor('Orange')
+            .setDescription(
+              `Code not redeemed: ${code} on platform: ${platform}`,
+            ),
+        ],
       });
     } catch (error) {
       this.logger.error('Error sending code not redeemed:', error);
@@ -41,7 +54,11 @@ export class DiscordService {
   async sendCodeExpired(code: string) {
     try {
       await this.webhookClient.send({
-        content: `Code expired: ${code}`,
+        embeds: [
+          this.embedBuilder
+            .setColor('Red')
+            .setDescription(`Code expired: ${code}`),
+        ],
       });
     } catch (error) {
       this.logger.error('Error sending code expired:', error);

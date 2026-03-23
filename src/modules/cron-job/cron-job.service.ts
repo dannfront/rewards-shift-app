@@ -13,6 +13,7 @@ export class CronJobService {
   ) {}
 
   //todo activar el cron
+  @Cron(CronExpression.EVERY_MINUTE)
   async handleCron() {
     this.logger.log('Iniciando el trabajo por lotes');
     const posts = await this.redditService.fetchRedditPosts();
