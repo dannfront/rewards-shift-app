@@ -26,7 +26,7 @@ It reverse-engineers the `shift.gearboxsoftware.com` web flow to simulate browse
 
 **Full cycle:**
 
-1. Fetch new SHiFT codes from a source (Reddit by default)
+1. Fetch new SHiFT codes from [MentalMars](https://mentalmars.com/game-news/borderlands-4-shift-codes/) (HTML table scraper)
 2. Authenticate with your Gearbox SHiFT account
 3. Validate each code (skip expired or already redeemed)
 4. Redeem valid codes across all your linked platforms (Steam, Xbox, PSN, Epic, etc.)
@@ -42,7 +42,7 @@ It reverse-engineers the `shift.gearboxsoftware.com` web flow to simulate browse
 | HTTP Client         | Axios + manual cookie jar (tough-cookie)         |
 | Scheduler           | `@nestjs/schedule` — cron 2× daily               |
 | Notifications       | Discord Webhook                                  |
-| Default code source | Reddit API (`r/Borderlandsshiftcodes`)           |
+| Code source         | MentalMars HTML scraper (adapter pattern)        |
 | Target              | `shift.gearboxsoftware.com` (reverse engineered) |
 | Infrastructure      | AWS Lambda (no AWS SDK)                          |
 
@@ -73,9 +73,6 @@ USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 EMAIL_SHIFT=your_email@example.com
 PASSWORD_SHIFT=your_password
 
-# Code source (Reddit by default — see "Custom Code Source" below)
-BASE_URL_REDDIT=https://www.reddit.com/r/Borderlandsshiftcodes/new.json?limit=5
-
 # Discord
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your_webhook
 ```
@@ -95,49 +92,40 @@ pnpm run start:prod
 
 ## 🔌 Custom Code Source
 
-By default the app fetches codes from Reddit's `r/Borderlandsshiftcodes`. However, you can plug in **any other source** by implementing the code provider interface.
+By default the app fetches codes from [MentalMars](https://mentalmars.com/game-news/borderlands-4-shift-codes/). You can plug in **any other source** by implementing a new adapter that returns `ShiftCode[]`.
 
-Some alternatives you might prefer:
+### How to add a custom adapter
 
-| Source                                                 | Notes                                        |
-| ------------------------------------------------------ | -------------------------------------------- |
-| [orcicorn.com](https://orcicorn.com/shift-codes)       | Curated list, clean API                      |
-| [lootlemon.com](https://www.lootlemon.com/shift-codes) | Game-specific code lists                     |
-| Your own database                                      | Store codes manually or from another scraper |
-| Any RSS / JSON feed                                    | Wrap it in the provider interface below      |
-
-### How to add a custom provider
-
-Create a service that implements the `ICodeProvider` interface and register it in the module:
+Create an adapter that implements `IShiftCodeAdapter`:
 
 ```typescript
-// src/modules/shift/interfaces/code-provider.interface.ts
-export interface ICodeProvider {
-  fetchCodes(): Promise<string[]>;
+// src/modules/shift-code/interfaces/shift-code-adapter.interface.ts
+export interface IShiftCodeAdapter {
+  fetchCodes(): Promise<ShiftCode[]>;
 }
+
+export const SHIFT_CODE_ADAPTER = 'SHIFT_CODE_ADAPTER';
 ```
 
 ```typescript
-// Example: fetch codes from a custom API
+// src/modules/shift-code/adapters/my-custom.adapter.ts
 @Injectable()
-export class MyCustomCodeProvider implements ICodeProvider {
-  async fetchCodes(): Promise<string[]> {
-    const res = await fetch('https://my-api.com/shift-codes');
-    const data = await res.json();
-    return data.codes; // string[]
+export class MyCustomAdapter implements IShiftCodeAdapter {
+  async fetchCodes(): Promise<ShiftCode[]> {
+    // Fetch from any source: API, RSS, DB, etc.
+    return [{ code: 'AAAAA-BBBBB-CCCCC-DDDDD-EEEEE', expireAt: false }];
   }
 }
 ```
 
-Then swap the provider in your module:
+Then swap the adapter in the module:
 
 ```typescript
-// shift.module.ts
-{
-  provide: 'CODE_PROVIDER',
-  useClass: MyCustomCodeProvider, // swap Reddit for your provider
-}
+// shift-code.module.ts
+{ provide: SHIFT_CODE_ADAPTER, useClass: MyCustomAdapter }
 ```
+
+> **Note:** The `ShiftCodeService` depends on the `IShiftCodeAdapter` abstraction, not a concrete class. It only calls `adapter.fetchCodes()` and returns the last 5 codes. All parsing and filtering logic lives in the adapter. The old `RedditModule` is dead code — Reddit started blocking `.json` API endpoints from datacenter IPs.
 
 ---
 
@@ -164,37 +152,34 @@ GET  /code_redemptions/{uuid}       → poll until status !== "pending"
 src/
 ├── main.ts
 ├── app.module.ts
+├── lambda.ts                 # AWS Lambda handler
 └── modules/
-    ├── cron-job/              # Runs the full flow 2× daily
-    ├── discord/               # Discord webhook client
+    ├── cron-job/              # Orchestrator: fetch → redeem → notify
+    ├── discord/               # Discord webhook client (EmbedBuilder)
     ├── notification/          # Notification abstraction
-    ├── reddit/                # Default code source (Reddit)
+    ├── shift-code/            # Code source: MentalMars adapter + service
+    │   ├── adapters/          # mental-mars.adapter.ts
+    │   └── interfaces/        # ShiftCode { code, expireAt }
     ├── shift/
     │   ├── constants/         # Regex patterns, HTTP headers
-    │   ├── interfaces/        # ShiftSession, RedemptionResult, ICodeProvider
+    │   ├── interfaces/        # ShiftSession, RedemptionResult
     │   ├── services/
     │   │   ├── shift-auth.service.ts
     │   │   ├── shift-rewards.service.ts
     │   │   ├── shift-redemption.service.ts
     │   │   └── session-manager.service.ts
-    │   ├── types/             # PlatformsEnum, ErrorsShift, SuccessShift
-    │   └── utils/             # getPlatforms, parseCookies
+    │   ├── types/             # PlatformsEnum, ErrorsEnum, SuccessEnum
+    │   └── utils/             # getPlatforms
+    ├── reddit/                # Dead code — old Reddit scraper, not imported
     └── shared/
-        └── http/              # AxiosClientUtil factory
+        └── http/              # AxiosClientFactory, parseCookies
 ```
 
 ---
 
 ## ☁️ AWS Lambda Deployment
 
-The app runs as an AWS Lambda function without using the AWS SDK directly.
-
-On Lambda, Reddit requests may be blocked due to IP restrictions. In that case, route them through [api.webscraping.ai](https://api.webscraping.ai/) as a transparent HTTP proxy — it handles residential IPs automatically.
-
-```dotenv
-# Add this when deploying to Lambda
-WEBSCRAPING_API_KEY=your_key
-```
+The app runs as an AWS Lambda function without using the AWS SDK directly. The MentalMars adapter uses a simple Apache server with no bot protection, so it works without proxies from AWS IPs.
 
 ---
 

@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ShiftService } from './modules/shift/services/shift.service';
-import { RedditService } from './modules/reddit/reddit.service';
+import { ShiftCodeService } from './modules/shift-code/shift-code.service';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -12,8 +12,8 @@ describe('AppController', () => {
       redeemAllCodes: jest.fn(),
     };
 
-    const mockRedditService = {
-      fetchRedditPosts: jest.fn(),
+    const mockShiftCodeService = {
+      fetchLatestCodes: jest.fn(),
     };
 
     const app: TestingModule = await Test.createTestingModule({
@@ -21,7 +21,7 @@ describe('AppController', () => {
       providers: [
         AppService,
         { provide: ShiftService, useValue: mockShiftService },
-        { provide: RedditService, useValue: mockRedditService },
+        { provide: ShiftCodeService, useValue: mockShiftCodeService },
       ],
     }).compile();
 

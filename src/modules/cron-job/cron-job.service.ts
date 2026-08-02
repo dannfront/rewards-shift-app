@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ShiftService } from '../shift/services/shift.service';
-import { RedditService } from '../reddit/reddit.service';
+import { ShiftCodeService } from '../shift-code/shift-code.service';
 
 @Injectable()
 export class CronJobService {
@@ -9,15 +9,15 @@ export class CronJobService {
 
   constructor(
     private readonly shiftService: ShiftService,
-    private readonly redditService: RedditService,
+    private readonly shiftCodeService: ShiftCodeService,
   ) {}
 
   //todo activar el cron
   @Cron(CronExpression.EVERY_MINUTE)
   async handleCron() {
     this.logger.log('Iniciando el trabajo por lotes');
-    const posts = await this.redditService.fetchRedditPosts();
-    await this.shiftService.redeemAllCodes(posts);
+    const codes = await this.shiftCodeService.fetchLatestCodes();
+    await this.shiftService.redeemAllCodes(codes);
     this.logger.log('Trabajo por lotes finalizado');
   }
 }

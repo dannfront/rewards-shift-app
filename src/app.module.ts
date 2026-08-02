@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { ShiftModule } from './modules/shift/shift.module';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { RedditModule } from './modules/reddit/reddit.module';
+import { ShiftCodeModule } from './modules/shift-code/shift-code.module';
 import { CronJobModule } from './modules/cron-job/cron-job.module';
 import { DiscordModule } from './modules/discord/discord.module';
 
@@ -13,7 +13,7 @@ import { DiscordModule } from './modules/discord/discord.module';
     ShiftModule,
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     ScheduleModule.forRoot(),
-    RedditModule,
+    ShiftCodeModule,
     CronJobModule,
     DiscordModule,
   ],
