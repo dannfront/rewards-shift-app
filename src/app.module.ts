@@ -6,7 +6,6 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ShiftCodeModule } from './modules/shift-code/shift-code.module';
 import { CronJobModule } from './modules/cron-job/cron-job.module';
-import { DiscordModule } from './modules/discord/discord.module';
 
 @Module({
   imports: [
@@ -15,7 +14,6 @@ import { DiscordModule } from './modules/discord/discord.module';
     ScheduleModule.forRoot(),
     ShiftCodeModule,
     CronJobModule,
-    DiscordModule,
   ],
   controllers: [AppController],
   providers: [AppService],
