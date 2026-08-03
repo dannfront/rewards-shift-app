@@ -15,7 +15,9 @@ export class NotificationService implements INotificationService {
   constructor(configService: ConfigService) {
     this.webhookUrl = configService.get<string>('DISCORD_WEBHOOK_URL');
     if (!this.webhookUrl) {
-      this.logger.error('DISCORD_WEBHOOK_URL not configured; notifications will be skipped');
+      this.logger.error(
+        'DISCORD_WEBHOOK_URL not configured; notifications will be skipped',
+      );
     }
   }
 

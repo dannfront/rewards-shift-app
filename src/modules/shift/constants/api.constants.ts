@@ -14,9 +14,3 @@ export const SHIFT_HEADERS = {
   REFERER: 'https://shift.gearboxsoftware.com/rewards',
   ORIGIN: 'https://shift.gearboxsoftware.com',
 } as const;
-
-export const REDDIT_API = {
-  BASE_URL: 'https://www.reddit.com/r/Borderlandsshiftcodes/new.json',
-  USER_AGENT: 'pc:rewards-shift-app:v1.0.0 (by /u/SantiagoDanielRojasH)',
-  LIMIT: 5,
-} as const;

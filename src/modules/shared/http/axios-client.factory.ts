@@ -34,13 +34,6 @@ export class AxiosClientFactory {
       withCredentials: true,
     });
   }
-
-  createRedditClient(): AxiosInstance {
-    return this.createClient({
-      baseURL: this.configService.get<string>('BASE_URL_REDDIT') ?? '',
-      withCredentials: true,
-    });
-  }
 }
 
 export interface AxiosClientUtil {
@@ -66,18 +59,5 @@ export class ShiftAxiosClient {
 
   async post(url: string, data?: unknown, config?: AxiosRequestConfig) {
     return this.client.post(url, data, config);
-  }
-}
-
-@Injectable()
-export class RedditAxiosClient {
-  private readonly client: AxiosInstance;
-
-  constructor(private readonly factory: AxiosClientFactory) {
-    this.client = this.factory.createRedditClient();
-  }
-
-  async get<T = unknown>(config?: AxiosRequestConfig) {
-    return this.client.get<T>('', config);
   }
 }

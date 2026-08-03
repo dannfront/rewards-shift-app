@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
@@ -10,6 +9,7 @@ import { NotificationService } from './notification.service';
 jest.mock('axios');
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
+const mockedPost = jest.mocked(mockedAxios.post);
 
 describe('NotificationService (axios webhook transport)', () => {
   let service: NotificationService;
@@ -40,7 +40,7 @@ describe('NotificationService (axios webhook transport)', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    mockedAxios.post.mockResolvedValue({ status: 204, data: '' } as never);
+    mockedPost.mockResolvedValue({ status: 204, data: '' } as never);
     loggerErrorSpy = jest
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => undefined);
@@ -63,8 +63,8 @@ describe('NotificationService (axios webhook transport)', () => {
 
       await service.notifyCodeRedeemed('ABC123', 'steam');
 
-      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.post).toHaveBeenCalledWith(WEBHOOK_URL, {
+      expect(mockedPost).toHaveBeenCalledTimes(1);
+      expect(mockedPost).toHaveBeenCalledWith(WEBHOOK_URL, {
         embeds: [
           {
             color: 0x57f287,
@@ -80,7 +80,7 @@ describe('NotificationService (axios webhook transport)', () => {
 
       await service.notifyCodeRedeemed('XYZ9-ZXY9-XYZ9-ZXY9-ZYZ9', 'epic');
 
-      expect(mockedAxios.post).toHaveBeenCalledWith(WEBHOOK_URL, {
+      expect(mockedPost).toHaveBeenCalledWith(WEBHOOK_URL, {
         embeds: [
           {
             color: 0x57f287,
@@ -99,8 +99,8 @@ describe('NotificationService (axios webhook transport)', () => {
 
       await service.notifyCodeFailed('ABC123', 'steam');
 
-      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.post).toHaveBeenCalledWith(WEBHOOK_URL, {
+      expect(mockedPost).toHaveBeenCalledTimes(1);
+      expect(mockedPost).toHaveBeenCalledWith(WEBHOOK_URL, {
         embeds: [
           {
             color: 0xe67e22,
@@ -118,8 +118,8 @@ describe('NotificationService (axios webhook transport)', () => {
 
       await service.notifyCodeExpired('ABC123');
 
-      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.post).toHaveBeenCalledWith(WEBHOOK_URL, {
+      expect(mockedPost).toHaveBeenCalledTimes(1);
+      expect(mockedPost).toHaveBeenCalledWith(WEBHOOK_URL, {
         embeds: [
           {
             color: 0xed4245,
@@ -135,12 +135,12 @@ describe('NotificationService (axios webhook transport)', () => {
       const module = await moduleWithUrl();
       service = module.get<NotificationService>(NotificationService);
       const error = new Error('Network down');
-      mockedAxios.post.mockRejectedValueOnce(error);
+      mockedPost.mockRejectedValueOnce(error);
 
       await expect(
         service.notifyCodeRedeemed('CODE', 'xboxlive'),
       ).resolves.not.toThrow();
-      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+      expect(mockedPost).toHaveBeenCalledTimes(1);
       expect(loggerErrorSpy).toHaveBeenCalled();
     });
   });
@@ -158,7 +158,7 @@ describe('NotificationService (axios webhook transport)', () => {
       ).resolves.not.toThrow();
       await expect(service.notifyCodeExpired('CODE')).resolves.not.toThrow();
 
-      expect(mockedAxios.post).not.toHaveBeenCalled();
+      expect(mockedPost).not.toHaveBeenCalled();
       expect(loggerErrorSpy).toHaveBeenCalled();
     });
   });
