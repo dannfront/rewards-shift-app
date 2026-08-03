@@ -1,3 +1,5 @@
+/* eslint-disable */
+// Dead code — kept as reference. Not imported by any module.
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { WebhookClient, EmbedBuilder } from 'discord.js';

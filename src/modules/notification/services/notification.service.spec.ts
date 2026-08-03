@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
@@ -15,7 +16,9 @@ describe('NotificationService (axios webhook transport)', () => {
   const WEBHOOK_URL = 'https://discord.com/api/webhooks/123/abc';
   let loggerErrorSpy: jest.SpyInstance;
 
-  const buildModule = async (webhookConfigured: boolean): Promise<TestingModule> => {
+  const buildModule = async (
+    webhookConfigured: boolean,
+  ): Promise<TestingModule> => {
     return Test.createTestingModule({
       providers: [
         NotificationService,
